@@ -132,30 +132,27 @@ export default function App() {
 
     try {
       if (authMode === 'signup') {
-        // Sign Up in Supabase Auth
+        // Sign Up passing metadata so SQL trigger populates profiles cleanly
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: selectedRole,
+              reg_no: selectedRole === 'student' ? regNo : 'ADMIN-OFFICER',
+              department: department
+            }
+          }
         });
 
         if (signUpError) throw signUpError;
 
         if (authData.user) {
-          // Insert User Profile in Profiles Table
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: authData.user.id,
-                full_name: fullName,
-                role: selectedRole,
-                reg_no: selectedRole === 'student' ? regNo : 'ADMIN-OFFICER',
-                department: department
-              }
-            ]);
-
-          if (profileError) throw profileError;
-          await fetchProfile(authData.user.id);
+          // Wait briefly for trigger execution before fetching profile
+          setTimeout(() => {
+            fetchProfile(authData.user.id);
+          }, 600);
         }
       } else {
         // Sign In
