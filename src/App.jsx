@@ -393,7 +393,7 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Anandhu S. Nair"}
+                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "student name"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
