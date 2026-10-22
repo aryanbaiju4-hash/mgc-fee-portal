@@ -31,11 +31,11 @@ import {
 // Sample initial data tailored for Mar Gregorios College
 const INITIAL_STUDENT = {
   id: 'MGC-2024-BCA102',
-  name: 'Anandhu S. Nair',
-  email: 'anandhu.bca24@mgcollege.ac.in',
+  name: 'Aimen Sha',
+  email: 'aimensha@mgcollege.ac.in',
   department: 'Department of Computer Applications',
   course: 'Bachelor of Computer Applications (BCA)',
-  semester: 'Semester 4',
+  semester: 'Semester 3',
   regNo: '210021088492'
 };
 
