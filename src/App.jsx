@@ -16,7 +16,10 @@ import {
   Plus,
   Loader2,
   Receipt,
-  GraduationCap
+  GraduationCap,
+  Users,
+  Search,
+  Send
 } from 'lucide-react';
 
 export default function App() {
@@ -41,15 +44,22 @@ export default function App() {
   const [fees, setFees] = useState([]);
   const [feesLoading, setFeesLoading] = useState(false);
 
-  // Payment Modal State
-  const [payingFee, setPayingFee] = useState(null);
+  // Admin Data State (Student Directory & Selection)
+  const [studentsList, setStudentsList] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Admin Publish Fee Form State
+  const [targetType, setTargetType] = useState('all'); // 'all' | 'specific'
+  const [selectedStudentId, setSelectedStudentId] = useState('');
   const [newFeeTitle, setNewFeeTitle] = useState('');
   const [newFeeDesc, setNewFeeDesc] = useState('');
   const [newFeeAmount, setNewFeeAmount] = useState('');
   const [newFeeDueDate, setNewFeeDueDate] = useState('');
-  const [targetStudentId, setTargetStudentId] = useState('');
+  const [publishing, setPublishing] = useState(false);
+
+  // Payment Modal State
+  const [payingFee, setPayingFee] = useState(null);
 
   // ---------------------------------------------------------
   // INITIAL LOAD & AUTH LISTENER
@@ -73,14 +83,17 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch Fee Records when Session and Profile active
+  // Fetch Fee Records & Students List when Session and Profile Active
   useEffect(() => {
     if (session && profile) {
       fetchFees();
+      if (profile.role === 'admin') {
+        fetchAllStudents();
+      }
     }
   }, [session, profile]);
 
-const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId) => {
     try {
       setLoading(true);
       
@@ -94,13 +107,13 @@ const fetchProfile = async (userId) => {
         console.error('Error fetching profile from DB:', error);
       }
 
-      // Personalized fallback directly from Auth user metadata
+      // Fallback: If DB trigger hasn't finished, reconstruct from metadata
       if (!data) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           data = {
             id: user.id,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Student User',
+            full_name: user.user_metadata?.full_name || 'Student User',
             role: user.user_metadata?.role || 'student',
             reg_no: user.user_metadata?.reg_no || 'N/A',
             department: user.user_metadata?.department || 'BCA'
@@ -119,7 +132,6 @@ const fetchProfile = async (userId) => {
     }
   };
 
-      
   const fetchFees = async () => {
     if (!session) return;
     setFeesLoading(true);
@@ -136,6 +148,27 @@ const fetchProfile = async (userId) => {
       console.error('Error fetching fees:', err);
     } finally {
       setFeesLoading(false);
+    }
+  };
+
+  const fetchAllStudents = async () => {
+    setStudentsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'student')
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      setStudentsList(data || []);
+      if (data && data.length > 0 && !selectedStudentId) {
+        setSelectedStudentId(data[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching student directory:', err);
+    } finally {
+      setStudentsLoading(false);
     }
   };
 
@@ -259,43 +292,82 @@ const fetchProfile = async (userId) => {
   };
 
   // ---------------------------------------------------------
-  // ADMIN HANDLER: PUBLISH FEE ITEM
+  // ADMIN HANDLER: PUBLISH FEE (SPECIFIC STUDENT OR ALL STUDENTS)
   // ---------------------------------------------------------
   const handlePublishFee = async (e) => {
     e.preventDefault();
-    if (!newFeeTitle || !newFeeAmount || !newFeeDueDate || !targetStudentId) {
-      alert('Please fill all required fee details including Student UUID.');
+    if (!newFeeTitle || !newFeeAmount || !newFeeDueDate) {
+      alert('Please fill out all required fee fields.');
       return;
     }
 
+    if (targetType === 'specific' && !selectedStudentId) {
+      alert('Please select a student from the list.');
+      return;
+    }
+
+    setPublishing(true);
     try {
-      const { error } = await supabase
-        .from('fee_records')
-        .insert([
+      let payload = [];
+
+      if (targetType === 'all') {
+        // Publish to all registered students
+        if (studentsList.length === 0) {
+          alert('No students found in the database to publish fees to.');
+          setPublishing(false);
+          return;
+        }
+
+        payload = studentsList.map((st) => ({
+          student_id: st.id,
+          title: newFeeTitle,
+          description: newFeeDesc || 'Scheduled college fee payment notice.',
+          amount: Number(newFeeAmount),
+          due_date: newFeeDueDate,
+          status: 'Pending'
+        }));
+      } else {
+        // Publish to one specific selected student
+        payload = [
           {
-            student_id: targetStudentId,
+            student_id: selectedStudentId,
             title: newFeeTitle,
             description: newFeeDesc || 'Scheduled college fee payment notice.',
             amount: Number(newFeeAmount),
             due_date: newFeeDueDate,
             status: 'Pending'
           }
-        ]);
+        ];
+      }
 
+      const { error } = await supabase.from('fee_records').insert(payload);
       if (error) throw error;
 
-      alert('Fee published successfully!');
+      alert(
+        targetType === 'all'
+          ? `Fee successfully published to all ${payload.length} students!`
+          : `Fee successfully published to the selected student!`
+      );
+
       setNewFeeTitle('');
       setNewFeeDesc('');
       setNewFeeAmount('');
       setNewFeeDueDate('');
-      setTargetStudentId('');
       fetchFees();
     } catch (err) {
       console.error('Failed to publish fee:', err);
-      alert(err.message || 'Error publishing fee item.');
+      alert(err.message || 'Error publishing fee schedule.');
+    } finally {
+      setPublishing(false);
     }
   };
+
+  // Filtered Students List for Admin Directory Search
+  const filteredStudents = studentsList.filter((st) => 
+    st.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    st.reg_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    st.department?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Financial Summary Calculations
   const totalPaid = fees.filter(f => f.status === 'Paid').reduce((sum, f) => sum + Number(f.amount), 0);
@@ -396,7 +468,7 @@ const fetchProfile = async (userId) => {
                     <input
                       type="text"
                       required
-                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Anandhu S. Nair"}
+                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Your Name"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
@@ -472,7 +544,7 @@ const fetchProfile = async (userId) => {
   }
 
   // ---------------------------------------------------------
-  // RENDER: LOGGED-IN PORTAL DASHBOARD (LIGHT THEME + COLLEGE BACKGROUND)
+  // RENDER: LOGGED-IN PORTAL DASHBOARD (LIGHT THEME + BACKGROUND)
   // ---------------------------------------------------------
   return (
     <div 
@@ -483,7 +555,7 @@ const fetchProfile = async (userId) => {
       <div className="absolute inset-0 bg-slate-100/90 backdrop-blur-sm pointer-events-none"></div>
 
       <div className="relative z-10">
-        {/* Top Header Navbar */}
+        {/* Navbar */}
         <header className="bg-white/95 border-b border-slate-200 shadow-sm sticky top-0 z-40 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -527,13 +599,13 @@ const fetchProfile = async (userId) => {
                     onClick={() => setActiveTab('studentView')}
                     className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'studentView' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}
                   >
-                    Student
+                    Student View
                   </button>
                   <button
                     onClick={() => setActiveTab('adminPanel')}
                     className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'adminPanel' ? 'bg-purple-700 text-white shadow-sm' : 'text-slate-600'}`}
                   >
-                    Admin
+                    Admin Panel
                   </button>
                 </div>
               )}
@@ -549,11 +621,11 @@ const fetchProfile = async (userId) => {
           </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Main Area */}
         <main className="max-w-6xl mx-auto px-3 sm:px-4 pt-6">
           {activeTab === 'studentView' ? (
             <div className="space-y-5">
-              {/* Actual Student Profile Card */}
+              {/* Student Profile Overview Card */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-wrap justify-between items-center gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -572,12 +644,6 @@ const fetchProfile = async (userId) => {
 
                 <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
                   <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center flex-1 sm:min-w-[120px]">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Portal ID</p>
-                    <p className="text-xs font-mono font-bold text-blue-700 mt-0.5 truncate max-w-[120px]" title={session.user.id}>
-                      {session.user.id.slice(0, 8)}...
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center flex-1 sm:min-w-[120px]">
                     <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Fee Status</p>
                     <p className="text-xs font-bold text-emerald-700 mt-0.5">
                       {totalUnpaid === 0 ? 'Fully Cleared' : 'Dues Pending'}
@@ -586,7 +652,7 @@ const fetchProfile = async (userId) => {
                 </div>
               </div>
 
-              {/* Summary Cards */}
+              {/* Financial Summary */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="bg-white/95 border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm">
                   <div className="flex items-center justify-between">
@@ -622,7 +688,7 @@ const fetchProfile = async (userId) => {
                 </div>
               </div>
 
-              {/* Fee Items Section */}
+              {/* Fee Items List */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -682,77 +748,190 @@ const fetchProfile = async (userId) => {
               </div>
             </div>
           ) : (
-            /* Admin View */
+            /* ADMIN PANEL: PUBLISH FEE & STUDENT DIRECTORY */
             <div className="space-y-6">
+              {/* 1. Publish Fee Form */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
                 <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-purple-700" /> Publish New Fee Schedule
+                  <Send className="w-5 h-5 text-purple-700" /> Publish Fee Schedule
                 </h3>
-                <p className="text-xs text-slate-500 mb-6">Published fee items will automatically sync to the designated student's database view.</p>
+                <p className="text-xs text-slate-500 mb-6">Publish fee notices either to all registered college students or to a specific student selected by name.</p>
 
-                <form onSubmit={handlePublishFee} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handlePublishFee} className="space-y-4">
+                  {/* Target Choice Selector */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Target Student User UUID</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Paste Student UUID"
-                      value={targetStudentId}
-                      onChange={(e) => setTargetStudentId(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-mono font-medium"
-                    />
+                    <label className="block text-xs font-bold text-slate-700 mb-2">Publish Target</label>
+                    <div className="grid grid-cols-2 gap-2 max-w-md">
+                      <button
+                        type="button"
+                        onClick={() => setTargetType('all')}
+                        className={`py-2.5 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all ${
+                          targetType === 'all' 
+                            ? 'bg-purple-700 text-white border-purple-700 shadow-sm' 
+                            : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Users className="w-4 h-4" /> All Students ({studentsList.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTargetType('specific')}
+                        className={`py-2.5 px-3 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all ${
+                          targetType === 'specific' 
+                            ? 'bg-purple-700 text-white border-purple-700 shadow-sm' 
+                            : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <User className="w-4 h-4" /> Specific Student
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Semester 4 Tuition Fee"
-                      value={newFeeTitle}
-                      onChange={(e) => setNewFeeTitle(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
-                    />
+
+                  {/* Student Select Dropdown if Specific is picked */}
+                  {targetType === 'specific' && (
+                    <div className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-2xl">
+                      <label className="block text-xs font-bold text-purple-900 mb-1">Select Student by Name</label>
+                      {studentsList.length === 0 ? (
+                        <p className="text-xs text-purple-700">No student accounts registered yet.</p>
+                      ) : (
+                        <select
+                          value={selectedStudentId}
+                          onChange={(e) => setSelectedStudentId(e.target.value)}
+                          className="w-full bg-white border border-purple-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-purple-700"
+                        >
+                          {studentsList.map((st) => (
+                            <option key={st.id} value={st.id}>
+                              {st.full_name} ({st.reg_no || 'Reg: N/A'} - {st.department || 'BCA'})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fee Details Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Fee Title</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Semester 4 Tuition Fee"
+                        value={newFeeTitle}
+                        onChange={(e) => setNewFeeTitle(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Fee Amount (₹)</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="20000"
+                        value={newFeeAmount}
+                        onChange={(e) => setNewFeeAmount(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Fee Description</label>
+                      <input
+                        type="text"
+                        placeholder="Core practical labs, library charges, and IT infrastructure fees."
+                        value={newFeeDesc}
+                        onChange={(e) => setNewFeeDesc(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={newFeeDueDate}
+                        onChange={(e) => setNewFeeDueDate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                      />
+                    </div>
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Description</label>
-                    <input
-                      type="text"
-                      placeholder="Practical labs, library fees, and IT infrastructure charges."
-                      value={newFeeDesc}
-                      onChange={(e) => setNewFeeDesc(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Amount (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="20000"
-                      value={newFeeAmount}
-                      onChange={(e) => setNewFeeAmount(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={newFeeDueDate}
-                      onChange={(e) => setNewFeeDueDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <button
-                      type="submit"
-                      className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md shadow-purple-700/20 active:scale-[0.98]"
-                    >
-                      Publish Fee Schedule
-                    </button>
-                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={publishing}
+                    className="w-full sm:w-auto bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-6 py-3 rounded-xl transition-all shadow-md shadow-purple-700/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    {publishing && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {targetType === 'all' ? `Publish Fee to All ${studentsList.length} Students` : 'Publish Fee to Selected Student'}
+                  </button>
                 </form>
+              </div>
+
+              {/* 2. Registered Students Directory */}
+              <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-700" /> Student Directory
+                    </h3>
+                    <p className="text-xs text-slate-500">View registered students and select individuals directly for fee assignment.</p>
+                  </div>
+
+                  {/* Search input */}
+                  <div className="relative min-w-[220px]">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search student or Reg No..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 focus:outline-none focus:border-blue-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {studentsLoading ? (
+                  <div className="p-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-700" /> Fetching student records...
+                  </div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                    No students found matching <strong className="text-slate-800">"{searchQuery}"</strong>.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="py-3 px-3">Student Name</th>
+                          <th className="py-3 px-3">Register No</th>
+                          <th className="py-3 px-3">Department</th>
+                          <th className="py-3 px-3 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredStudents.map((st) => (
+                          <tr key={st.id} className="hover:bg-slate-50 transition-all">
+                            <td className="py-3 px-3 font-bold text-slate-900">{st.full_name}</td>
+                            <td className="py-3 px-3 font-mono text-slate-700">{st.reg_no || 'N/A'}</td>
+                            <td className="py-3 px-3 font-semibold text-blue-700">{st.department || 'BCA'}</td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                onClick={() => {
+                                  setTargetType('specific');
+                                  setSelectedStudentId(st.id);
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg font-bold transition-all text-[11px]"
+                              >
+                                Select for Fee
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
