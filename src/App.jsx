@@ -189,7 +189,7 @@ export default function App() {
           password,
           options: {
             data: {
-              full_name: fullName || 'Gemini',
+              full_name: fullName || 'YOUR NAME',
               role: selectedRole,
               reg_no: selectedRole === 'student' ? regNo : 'ADMIN-OFFICER',
               department: department
@@ -247,7 +247,7 @@ export default function App() {
         await handlePaymentSuccess(feeItem.id, response.razorpay_payment_id, feeItem.amount);
       },
       prefill: {
-        name: profile?.full_name || 'Gemini',
+        name: profile?.full_name || 'Your name',
         email: session?.user?.email || '',
       },
       theme: { color: '#1d4ed8' }
@@ -458,7 +458,7 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Gemini"}
+                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Your Name"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
