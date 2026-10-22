@@ -14,7 +14,6 @@ import {
   User,
   BookOpen,
   Plus,
-  QrCode,
   Loader2
 } from 'lucide-react';
 
@@ -42,7 +41,6 @@ export default function App() {
 
   // Payment Modal State
   const [payingFee, setPayingFee] = useState(null);
-  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Admin Publish Fee Form State
   const [newFeeTitle, setNewFeeTitle] = useState('');
@@ -54,7 +52,7 @@ export default function App() {
   // ---------------------------------------------------------
   // INITIAL LOAD & AUTH LISTENER
   // ---------------------------------------------------------
-useEffect(() => {
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
@@ -73,18 +71,18 @@ useEffect(() => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch Profile and Fee Records when Session Active
+  // Fetch Fee Records when Session and Profile active
   useEffect(() => {
     if (session && profile) {
       fetchFees();
     }
   }, [session, profile]);
 
- const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId) => {
     try {
       setLoading(true);
       
-      // Use .maybeSingle() to prevent PGRST116 single-row errors
+      // Use maybeSingle to avoid single-row PGRST116 crashes
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -92,11 +90,10 @@ useEffect(() => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile from database:', error);
+        console.error('Error fetching profile from DB:', error);
       }
 
-      // Fallback: If database trigger has not finished creating the profile row,
-      // reconstruct profile using the metadata stored during signup
+      // Fallback: If DB trigger hasn't finished, reconstruct from metadata
       if (!data) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -120,8 +117,28 @@ useEffect(() => {
       setLoading(false);
     }
   };
+
+  const fetchFees = async () => {
+    if (!session) return;
+    setFeesLoading(true);
+    try {
+      let query = supabase.from('fee_records').select('*');
+      if (profile?.role === 'student') {
+        query = query.eq('student_id', session.user.id);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setFees(data || []);
+    } catch (err) {
+      console.error('Error fetching fees:', err);
+    } finally {
+      setFeesLoading(false);
+    }
+  };
+
   // ---------------------------------------------------------
-  // AUTHENTICATION HANDLERS (SUPABASE)
+  // AUTHENTICATION HANDLERS
   // ---------------------------------------------------------
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
@@ -130,7 +147,6 @@ useEffect(() => {
 
     try {
       if (authMode === 'signup') {
-        // Sign Up passing metadata so SQL trigger populates profiles cleanly
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -147,13 +163,11 @@ useEffect(() => {
         if (signUpError) throw signUpError;
 
         if (authData.user) {
-          // Wait briefly for trigger execution before fetching profile
           setTimeout(() => {
             fetchProfile(authData.user.id);
           }, 600);
         }
       } else {
-        // Sign In
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -180,28 +194,26 @@ useEffect(() => {
   };
 
   // ---------------------------------------------------------
-  // RAZORPAY INTEGRATION & PAYMENT SETTLEMENT
+  // RAZORPAY PAYMENT GATEWAY HANDLER
   // ---------------------------------------------------------
   const handleInitiateRazorpay = (feeItem) => {
     setPayingFee(feeItem);
 
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_dummy_key',
-      amount: feeItem.amount * 100, // Amount in paise
+      amount: feeItem.amount * 100,
       currency: 'INR',
       name: 'Mar Gregorios College, Punnapra',
       description: `Payment for ${feeItem.title}`,
       image: '/logo.png',
       handler: async function (response) {
-        await handlePaymentSuccess(feeItem.id, response.razorpay_payment_id);
+        await handlePaymentSuccess(feeItem.id, response.razorpay_payment_id, feeItem.amount);
       },
       prefill: {
         name: profile?.full_name || '',
         email: session?.user?.email || '',
       },
-      theme: {
-        color: '#2563eb'
-      }
+      theme: { color: '#2563eb' }
     };
 
     if (window.Razorpay) {
@@ -212,10 +224,8 @@ useEffect(() => {
     }
   };
 
-  const handlePaymentSuccess = async (feeId, razorpayPaymentId) => {
-    setProcessingPayment(true);
+  const handlePaymentSuccess = async (feeId, razorpayPaymentId, feeAmount) => {
     try {
-      // 1. Update Fee Status to 'Paid'
       const { error: feeErr } = await supabase
         .from('fee_records')
         .update({ status: 'Paid' })
@@ -223,7 +233,6 @@ useEffect(() => {
 
       if (feeErr) throw feeErr;
 
-      // 2. Log Payment Record in Transactions Table
       const { error: txErr } = await supabase
         .from('transactions')
         .insert([
@@ -231,22 +240,19 @@ useEffect(() => {
             fee_id: feeId,
             student_id: session.user.id,
             razorpay_payment_id: razorpayPaymentId,
-            amount: payingFee.amount,
+            amount: feeAmount,
             status: 'success'
           }
         ]);
 
       if (txErr) throw txErr;
 
-      // Refresh Local Dues
       await fetchFees();
       setPayingFee(null);
       alert(`Payment Successful! Receipt ID: ${razorpayPaymentId}`);
     } catch (err) {
       console.error('Payment processing failed:', err);
-      alert('Payment recorded in gateway but failed to update portal status.');
-    } finally {
-      setProcessingPayment(false);
+      alert('Payment succeeded on gateway but failed to update status.');
     }
   };
 
@@ -297,7 +303,7 @@ useEffect(() => {
   // Loading Screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
         <p className="text-xs text-slate-400">Loading Mar Gregorios Portal...</p>
       </div>
@@ -305,7 +311,7 @@ useEffect(() => {
   }
 
   // ---------------------------------------------------------
-  // RENDER: SIGN IN / SIGN UP SCREEN WITH BACKGROUND & LOGO
+  // RENDER: SIGN IN / SIGN UP SCREEN
   // ---------------------------------------------------------
   if (!session || !profile) {
     return (
@@ -363,7 +369,7 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Auth Switcher */}
+          {/* Auth Mode Switcher */}
           <div className="flex justify-between items-center border-b border-slate-700 pb-3 mb-6">
             <h2 className="text-lg font-bold text-white">
               {authMode === 'signin' ? `${selectedRole === 'admin' ? 'Admin' : 'Student'} Sign In` : `Create ${selectedRole === 'admin' ? 'Admin' : 'Student'} Account`}
@@ -377,7 +383,7 @@ useEffect(() => {
             </button>
           </div>
 
-          {/* Form */}
+          {/* Sign In / Sign Up Form */}
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === 'signup' && (
               <>
@@ -388,7 +394,7 @@ useEffect(() => {
                     <input
                       type="text"
                       required
-                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "student name"}
+                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Anandhu S. Nair"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
@@ -468,7 +474,7 @@ useEffect(() => {
   // ---------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
-      {/* Top Navigation */}
+      {/* Top Header */}
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -526,11 +532,11 @@ useEffect(() => {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-4 pt-8">
         {activeTab === 'studentView' ? (
           <div className="space-y-6">
-            {/* Student Profile Overview */}
+            {/* Profile Overview */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-wrap justify-between items-center gap-4">
               <div>
                 <span className="text-xs font-semibold px-2.5 py-1 bg-blue-950 text-blue-400 border border-blue-800 rounded-md">
@@ -555,7 +561,7 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Overview Stats */}
+            {/* Financial Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                 <div className="flex items-center justify-between">
@@ -585,7 +591,7 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Fee Statement List */}
+            {/* Fee Items List */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
               <h3 className="text-base font-bold text-white mb-4">Active & Historical Fee Statements</h3>
               
