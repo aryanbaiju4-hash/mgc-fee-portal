@@ -54,7 +54,7 @@ export default function App() {
   // ---------------------------------------------------------
   // INITIAL LOAD & AUTH LISTENER
   // ---------------------------------------------------------
-  useEffect(() => {
+useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
@@ -80,48 +80,46 @@ export default function App() {
     }
   }, [session, profile]);
 
-  const fetchProfile = async (userId) => {
+ const fetchProfile = async (userId) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Use .maybeSingle() to prevent PGRST116 single-row errors
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+      if (error) {
+        console.error('Error fetching profile from database:', error);
       }
+
+      // Fallback: If database trigger has not finished creating the profile row,
+      // reconstruct profile using the metadata stored during signup
+      if (!data) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          data = {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || 'Student User',
+            role: user.user_metadata?.role || 'student',
+            reg_no: user.user_metadata?.reg_no || 'N/A',
+            department: user.user_metadata?.department || 'BCA'
+          };
+        }
+      }
+
       if (data) {
         setProfile(data);
         setActiveTab(data.role === 'admin' ? 'adminPanel' : 'studentView');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to resolve profile:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchFees = async () => {
-    if (!session) return;
-    setFeesLoading(true);
-    try {
-      let query = supabase.from('fee_records').select('*');
-      if (profile?.role === 'student') {
-        query = query.eq('student_id', session.user.id);
-      }
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setFees(data || []);
-    } catch (err) {
-      console.error('Error fetching fees:', err);
-    } finally {
-      setFeesLoading(false);
-    }
-  };
-
   // ---------------------------------------------------------
   // AUTHENTICATION HANDLERS (SUPABASE)
   // ---------------------------------------------------------
