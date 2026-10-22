@@ -80,7 +80,7 @@ export default function App() {
     }
   }, [session, profile]);
 
-  const fetchProfile = async (userId) => {
+const fetchProfile = async (userId) => {
     try {
       setLoading(true);
       
@@ -94,13 +94,13 @@ export default function App() {
         console.error('Error fetching profile from DB:', error);
       }
 
-      // Fallback: If DB trigger hasn't finished, reconstruct from metadata
+      // Personalized fallback directly from Auth user metadata
       if (!data) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           data = {
             id: user.id,
-            full_name: user.user_metadata?.full_name || 'Student User',
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Student User',
             role: user.user_metadata?.role || 'student',
             reg_no: user.user_metadata?.reg_no || 'N/A',
             department: user.user_metadata?.department || 'BCA'
@@ -119,6 +119,7 @@ export default function App() {
     }
   };
 
+      
   const fetchFees = async () => {
     if (!session) return;
     setFeesLoading(true);
