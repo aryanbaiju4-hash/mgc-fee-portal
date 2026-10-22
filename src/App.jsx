@@ -113,7 +113,7 @@ export default function App() {
         if (user) {
           data = {
             id: user.id,
-            full_name: user.user_metadata?.full_name || 'Gemini',
+            full_name: user.user_metadata?.full_name || 'Your Name',
             role: user.user_metadata?.role || 'student',
             reg_no: user.user_metadata?.reg_no || 'N/A',
             department: user.user_metadata?.department || 'BCA'
