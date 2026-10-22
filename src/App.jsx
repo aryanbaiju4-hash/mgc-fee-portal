@@ -113,7 +113,7 @@ export default function App() {
         if (user) {
           data = {
             id: user.id,
-            full_name: user.user_metadata?.full_name || 'Student User',
+            full_name: user.user_metadata?.full_name || 'Gemini',
             role: user.user_metadata?.role || 'student',
             reg_no: user.user_metadata?.reg_no || 'N/A',
             department: user.user_metadata?.department || 'BCA'
@@ -187,7 +187,7 @@ export default function App() {
           password,
           options: {
             data: {
-              full_name: fullName,
+              full_name: fullName || 'Gemini',
               role: selectedRole,
               reg_no: selectedRole === 'student' ? regNo : 'ADMIN-OFFICER',
               department: department
@@ -245,7 +245,7 @@ export default function App() {
         await handlePaymentSuccess(feeItem.id, response.razorpay_payment_id, feeItem.amount);
       },
       prefill: {
-        name: profile?.full_name || '',
+        name: profile?.full_name || 'Gemini',
         email: session?.user?.email || '',
       },
       theme: { color: '#1d4ed8' }
@@ -292,7 +292,7 @@ export default function App() {
   };
 
   // ---------------------------------------------------------
-  // ADMIN HANDLER: PUBLISH FEE (SPECIFIC STUDENT OR ALL STUDENTS)
+  // ADMIN HANDLER: PUBLISH FEE
   // ---------------------------------------------------------
   const handlePublishFee = async (e) => {
     e.preventDefault();
@@ -311,7 +311,6 @@ export default function App() {
       let payload = [];
 
       if (targetType === 'all') {
-        // Publish to all registered students
         if (studentsList.length === 0) {
           alert('No students found in the database to publish fees to.');
           setPublishing(false);
@@ -327,7 +326,6 @@ export default function App() {
           status: 'Pending'
         }));
       } else {
-        // Publish to one specific selected student
         payload = [
           {
             student_id: selectedStudentId,
@@ -362,19 +360,16 @@ export default function App() {
     }
   };
 
-  // Filtered Students List for Admin Directory Search
   const filteredStudents = studentsList.filter((st) => 
     st.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     st.reg_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     st.department?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Financial Summary Calculations
   const totalPaid = fees.filter(f => f.status === 'Paid').reduce((sum, f) => sum + Number(f.amount), 0);
   const totalUnpaid = fees.filter(f => f.status !== 'Paid').reduce((sum, f) => sum + Number(f.amount), 0);
   const overdueTotal = fees.filter(f => f.status === 'Overdue').reduce((sum, f) => sum + Number(f.amount), 0);
 
-  // Loading Screen
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-sans">
@@ -384,9 +379,6 @@ export default function App() {
     );
   }
 
-  // ---------------------------------------------------------
-  // RENDER: SIGN IN / SIGN UP SCREEN (LIGHT THEME)
-  // ---------------------------------------------------------
   if (!session || !profile) {
     return (
       <div 
@@ -396,7 +388,6 @@ export default function App() {
         <div className="absolute inset-0 bg-blue-950/40 backdrop-blur-sm"></div>
 
         <div className="relative z-10 w-full max-w-md bg-white/95 border border-slate-200 rounded-3xl shadow-2xl p-6 sm:p-8 backdrop-blur-md">
-          {/* Header Branding */}
           <div className="text-center mb-6">
             <div className="w-20 h-20 bg-blue-50/90 rounded-2xl p-2.5 mx-auto mb-3 shadow-md border border-blue-100 flex items-center justify-center">
               <img 
@@ -414,7 +405,6 @@ export default function App() {
             <p className="text-xs text-slate-500 mt-1">Student & Admin Fee Management Portal</p>
           </div>
 
-          {/* Role Toggle */}
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-2xl mb-6 border border-slate-200">
             <button
               type="button"
@@ -443,7 +433,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Auth Mode Switcher */}
           <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-5">
             <h2 className="text-base font-bold text-slate-900">
               {authMode === 'signin' ? `${selectedRole === 'admin' ? 'Admin' : 'Student'} Sign In` : `Create ${selectedRole === 'admin' ? 'Admin' : 'Student'} Account`}
@@ -457,7 +446,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Sign In / Sign Up Form */}
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === 'signup' && (
               <>
@@ -468,7 +456,7 @@ export default function App() {
                     <input
                       type="text"
                       required
-                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Your Name"}
+                      placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Gemini"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
@@ -543,19 +531,14 @@ export default function App() {
     );
   }
 
-  // ---------------------------------------------------------
-  // RENDER: LOGGED-IN PORTAL DASHBOARD (LIGHT THEME + BACKGROUND)
-  // ---------------------------------------------------------
   return (
     <div 
       className="min-h-screen font-sans bg-cover bg-center bg-fixed text-slate-800 relative pb-12"
       style={{ backgroundImage: `url('/college-bg.jpg')` }}
     >
-      {/* Light Overlay */}
       <div className="absolute inset-0 bg-slate-100/90 backdrop-blur-sm pointer-events-none"></div>
 
       <div className="relative z-10">
-        {/* Navbar */}
         <header className="bg-white/95 border-b border-slate-200 shadow-sm sticky top-0 z-40 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -584,7 +567,7 @@ export default function App() {
               ) : (
                 <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
                   <div className="w-7 h-7 bg-blue-700 rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-sm shrink-0">
-                    {profile.full_name?.split(' ').map(n => n[0]).join('') || 'S'}
+                    {profile.full_name?.split(' ').map(n => n[0]).join('') || 'G'}
                   </div>
                   <div className="hidden sm:block">
                     <p className="font-bold text-slate-900 leading-tight">{profile.full_name}</p>
@@ -621,11 +604,9 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main Area */}
         <main className="max-w-6xl mx-auto px-3 sm:px-4 pt-6">
           {activeTab === 'studentView' ? (
             <div className="space-y-5">
-              {/* Student Profile Overview Card */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-wrap justify-between items-center gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -652,7 +633,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Financial Summary */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="bg-white/95 border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm">
                   <div className="flex items-center justify-between">
@@ -688,7 +668,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Fee Items List */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -748,9 +727,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            /* ADMIN PANEL: PUBLISH FEE & STUDENT DIRECTORY */
             <div className="space-y-6">
-              {/* 1. Publish Fee Form */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
                 <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
                   <Send className="w-5 h-5 text-purple-700" /> Publish Fee Schedule
@@ -758,7 +735,6 @@ export default function App() {
                 <p className="text-xs text-slate-500 mb-6">Publish fee notices either to all registered college students or to a specific student selected by name.</p>
 
                 <form onSubmit={handlePublishFee} className="space-y-4">
-                  {/* Target Choice Selector */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-2">Publish Target</label>
                     <div className="grid grid-cols-2 gap-2 max-w-md">
@@ -787,7 +763,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Student Select Dropdown if Specific is picked */}
                   {targetType === 'specific' && (
                     <div className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-2xl">
                       <label className="block text-xs font-bold text-purple-900 mb-1">Select Student by Name</label>
@@ -809,7 +784,6 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Fee Details Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Fee Title</label>
@@ -866,7 +840,6 @@ export default function App() {
                 </form>
               </div>
 
-              {/* 2. Registered Students Directory */}
               <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
@@ -876,7 +849,6 @@ export default function App() {
                     <p className="text-xs text-slate-500">View registered students and select individuals directly for fee assignment.</p>
                   </div>
 
-                  {/* Search input */}
                   <div className="relative min-w-[220px]">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <input
