@@ -14,7 +14,9 @@ import {
   User,
   BookOpen,
   Plus,
-  Loader2
+  Loader2,
+  Receipt,
+  GraduationCap
 } from 'lucide-react';
 
 export default function App() {
@@ -82,7 +84,6 @@ export default function App() {
     try {
       setLoading(true);
       
-      // Use maybeSingle to avoid single-row PGRST116 crashes
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -213,7 +214,7 @@ export default function App() {
         name: profile?.full_name || '',
         email: session?.user?.email || '',
       },
-      theme: { color: '#2563eb' }
+      theme: { color: '#1d4ed8' }
     };
 
     if (window.Razorpay) {
@@ -303,50 +304,50 @@ export default function App() {
   // Loading Screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
-        <p className="text-xs text-slate-400">Loading Mar Gregorios Portal...</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-sans">
+        <Loader2 className="w-10 h-10 text-blue-700 animate-spin mb-3" />
+        <p className="text-xs font-semibold text-slate-600">Loading Mar Gregorios Fee Portal...</p>
       </div>
     );
   }
 
   // ---------------------------------------------------------
-  // RENDER: SIGN IN / SIGN UP SCREEN
+  // RENDER: SIGN IN / SIGN UP SCREEN (LIGHT THEME)
   // ---------------------------------------------------------
   if (!session || !profile) {
     return (
       <div 
-        className="min-h-screen flex items-center justify-center p-4 font-sans text-slate-100 bg-cover bg-center bg-no-repeat relative"
+        className="min-h-screen flex items-center justify-center p-4 font-sans text-slate-800 bg-cover bg-center bg-no-repeat relative"
         style={{ backgroundImage: `url('/college-bg.jpg')` }}
       >
-        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-blue-950/40 backdrop-blur-sm"></div>
 
-        <div className="relative z-10 w-full max-w-md bg-slate-900/90 border border-slate-700/80 rounded-2xl shadow-2xl p-8 backdrop-blur-md">
+        <div className="relative z-10 w-full max-w-md bg-white/95 border border-slate-200 rounded-3xl shadow-2xl p-6 sm:p-8 backdrop-blur-md">
           {/* Header Branding */}
           <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-white/10 rounded-2xl p-2 mx-auto mb-3 shadow-xl border border-white/20 flex items-center justify-center">
+            <div className="w-20 h-20 bg-blue-50/90 rounded-2xl p-2.5 mx-auto mb-3 shadow-md border border-blue-100 flex items-center justify-center">
               <img 
                 src="/logo.png" 
                 alt="Mar Gregorios College Logo" 
                 className="max-w-full max-h-full object-contain"
                 onError={(e) => {
                   e.target.style.display = 'none';
-                  e.target.parentNode.innerHTML = '<div class="text-blue-400 font-bold text-xl">MGC</div>';
+                  e.target.parentNode.innerHTML = '<div class="text-blue-700 font-bold text-xl">MGC</div>';
                 }}
               />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Mar Gregorios College</h1>
-            <p className="text-xs text-blue-400 font-medium">Arts and Science, Punnapra</p>
-            <p className="text-xs text-slate-400 mt-1">Student & Admin Fee Management Portal</p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Mar Gregorios College</h1>
+            <p className="text-xs text-blue-700 font-semibold uppercase tracking-wider mt-0.5">Arts & Science, Punnapra</p>
+            <p className="text-xs text-slate-500 mt-1">Student & Admin Fee Management Portal</p>
           </div>
 
           {/* Role Toggle */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/80 rounded-xl mb-6 border border-slate-700/50">
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-2xl mb-6 border border-slate-200">
             <button
               type="button"
               onClick={() => setSelectedRole('student')}
-              className={`py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
-                selectedRole === 'student' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${
+                selectedRole === 'student' ? 'bg-blue-700 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <UserCheck className="w-4 h-4" /> Student
@@ -354,8 +355,8 @@ export default function App() {
             <button
               type="button"
               onClick={() => setSelectedRole('admin')}
-              className={`py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
-                selectedRole === 'admin' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all ${
+                selectedRole === 'admin' ? 'bg-blue-700 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <ShieldCheck className="w-4 h-4" /> Admin
@@ -363,21 +364,21 @@ export default function App() {
           </div>
 
           {authError && (
-            <div className="mb-4 p-3 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{authError}</span>
             </div>
           )}
 
           {/* Auth Mode Switcher */}
-          <div className="flex justify-between items-center border-b border-slate-700 pb-3 mb-6">
-            <h2 className="text-lg font-bold text-white">
+          <div className="flex justify-between items-center border-b border-slate-200 pb-3 mb-5">
+            <h2 className="text-base font-bold text-slate-900">
               {authMode === 'signin' ? `${selectedRole === 'admin' ? 'Admin' : 'Student'} Sign In` : `Create ${selectedRole === 'admin' ? 'Admin' : 'Student'} Account`}
             </h2>
             <button
               type="button"
               onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
-              className="text-xs text-blue-400 hover:underline font-medium"
+              className="text-xs text-blue-700 hover:underline font-bold"
             >
               {authMode === 'signin' ? "Need an account? Sign Up" : "Existing user? Sign In"}
             </button>
@@ -388,7 +389,7 @@ export default function App() {
             {authMode === 'signup' && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
                   <div className="relative">
                     <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <input
@@ -397,14 +398,14 @@ export default function App() {
                       placeholder={selectedRole === 'admin' ? "Prof. / Office Officer Name" : "Anandhu S. Nair"}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
                     />
                   </div>
                 </div>
 
                 {selectedRole === 'student' && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">Register Number</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Register Number</label>
                     <div className="relative">
                       <BookOpen className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                       <input
@@ -413,7 +414,7 @@ export default function App() {
                         placeholder="210021088492"
                         value={regNo}
                         onChange={(e) => setRegNo(e.target.value)}
-                        className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-mono font-medium"
                       />
                     </div>
                   </div>
@@ -422,7 +423,7 @@ export default function App() {
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">College Email Address</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">College Email Address</label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                 <input
@@ -431,13 +432,13 @@ export default function App() {
                   placeholder={selectedRole === 'admin' ? "admin@mgcollege.ac.in" : "student@mgcollege.ac.in"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                 <input
@@ -446,7 +447,7 @@ export default function App() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 focus:outline-none focus:border-blue-700 focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
@@ -454,14 +455,14 @@ export default function App() {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/30 text-sm mt-2 flex items-center justify-center gap-2"
+              className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-700/25 text-sm mt-2 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {authMode === 'signin' ? `Sign In as ${selectedRole === 'admin' ? 'Admin' : 'Student'}` : 'Complete Registration'}
             </button>
           </form>
 
-          <p className="text-center text-[11px] text-slate-400 mt-6">
+          <p className="text-center text-[11px] font-medium text-slate-500 mt-6">
             Mar Gregorios College of Arts and Science, Punnapra
           </p>
         </div>
@@ -470,258 +471,292 @@ export default function App() {
   }
 
   // ---------------------------------------------------------
-  // RENDER: LOGGED-IN PORTAL DASHBOARD
+  // RENDER: LOGGED-IN PORTAL DASHBOARD (LIGHT THEME + COLLEGE BACKGROUND)
   // ---------------------------------------------------------
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
-      {/* Top Header */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-bold text-base text-white leading-tight">Mar Gregorios College, Punnapra</h1>
-              <p className="text-xs text-blue-400 font-medium">Online Fee Payment & Management Portal</p>
-            </div>
-          </div>
+    <div 
+      className="min-h-screen font-sans bg-cover bg-center bg-fixed text-slate-800 relative pb-12"
+      style={{ backgroundImage: `url('/college-bg.jpg')` }}
+    >
+      {/* Light Overlay */}
+      <div className="absolute inset-0 bg-slate-100/90 backdrop-blur-sm pointer-events-none"></div>
 
-          <div className="flex items-center gap-3">
-            {profile.role === 'admin' ? (
-              <span className="bg-purple-950 text-purple-300 border border-purple-800/60 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-purple-400" /> Admin Officer
-              </span>
-            ) : (
-              <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl text-xs">
-                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white text-[10px]">
-                  {profile.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                </div>
-                <div>
-                  <p className="font-semibold text-white">{profile.full_name}</p>
-                  <p className="text-[10px] text-slate-400">{profile.reg_no}</p>
-                </div>
+      <div className="relative z-10">
+        {/* Top Header Navbar */}
+        <header className="bg-white/95 border-b border-slate-200 shadow-sm sticky top-0 z-40 backdrop-blur-md">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl p-1 shadow-sm flex items-center justify-center shrink-0">
+                <img 
+                  src="/logo.png" 
+                  alt="MGC Logo" 
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentNode.innerHTML = '<div class="text-blue-700 font-bold text-xs">MGC</div>';
+                  }}
+                />
               </div>
-            )}
-
-            {profile.role === 'admin' && (
-              <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
-                <button
-                  onClick={() => setActiveTab('studentView')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg ${activeTab === 'studentView' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
-                >
-                  Student View
-                </button>
-                <button
-                  onClick={() => setActiveTab('adminPanel')}
-                  className={`px-3 py-1 text-xs font-medium rounded-lg ${activeTab === 'adminPanel' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}
-                >
-                  Admin Panel
-                </button>
-              </div>
-            )}
-
-            <button
-              onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-all"
-              title="Log Out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="max-w-6xl mx-auto px-4 pt-8">
-        {activeTab === 'studentView' ? (
-          <div className="space-y-6">
-            {/* Profile Overview */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-wrap justify-between items-center gap-4">
               <div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-blue-950 text-blue-400 border border-blue-800 rounded-md">
-                  {profile.role === 'admin' ? 'Viewing as Student' : 'Active Student'}
+                <h1 className="font-bold text-sm sm:text-base text-slate-900 leading-tight">Mar Gregorios College, Punnapra</h1>
+                <p className="text-[11px] text-blue-700 font-semibold">Student Online Fee Portal</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto sm:ml-0">
+              {profile.role === 'admin' ? (
+                <span className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-purple-700" /> Admin
                 </span>
-                <h2 className="text-xl font-bold text-white mt-2">{profile.full_name}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Reg No: <span className="text-slate-200 font-mono">{profile.reg_no || 'N/A'}</span> • {profile.department || 'BCA'}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">{session.user.email}</p>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3 rounded-xl text-center min-w-[120px]">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">System UUID</p>
-                  <p className="text-[10px] font-mono text-blue-400 mt-1 truncate max-w-[100px]" title={session.user.id}>{session.user.id}</p>
-                </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3 rounded-xl text-center min-w-[120px]">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Standard Rate</p>
-                  <p className="text-xs font-bold text-emerald-400 mt-1">₹20,000 / Sem</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Financial Summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">Total Unpaid Dues</p>
-                  <AlertCircle className="w-5 h-5 text-amber-400" />
-                </div>
-                <p className="text-2xl font-bold text-amber-400 mt-2">₹{totalUnpaid.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Pending clearance</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">Total Fees Paid</p>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                </div>
-                <p className="text-2xl font-bold text-emerald-400 mt-2">₹{totalPaid.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Verified Gateway Receipts</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">Overdue Fines</p>
-                  <Clock className="w-5 h-5 text-rose-400" />
-                </div>
-                <p className="text-2xl font-bold text-rose-400 mt-2">₹{overdueTotal.toLocaleString('en-IN')}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Past designated deadline</p>
-              </div>
-            </div>
-
-            {/* Fee Items List */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <h3 className="text-base font-bold text-white mb-4">Active & Historical Fee Statements</h3>
-              
-              {feesLoading ? (
-                <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> Fetching database records...
-                </div>
-              ) : fees.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500 bg-slate-950/50 rounded-xl border border-slate-800">
-                  No fee statements assigned to this account yet.
-                </div>
               ) : (
-                <div className="space-y-4">
-                  {fees.map((fee) => (
-                    <div key={fee.id} className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 flex flex-wrap justify-between items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                            fee.status === 'Paid' ? 'bg-emerald-950 border-emerald-800 text-emerald-400' :
-                            fee.status === 'Overdue' ? 'bg-rose-950 border-rose-800 text-rose-400' : 'bg-amber-950 border-amber-800 text-amber-400'
-                          }`}>
-                            {fee.status}
-                          </span>
-                          <h4 className="text-sm font-bold text-white">{fee.title}</h4>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-1">{fee.description}</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Due Date: <span className="text-slate-300 font-mono">{fee.due_date}</span></p>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-xs text-slate-400">Amount</p>
-                          <p className="text-base font-bold text-white">₹{Number(fee.amount).toLocaleString('en-IN')}</p>
-                        </div>
-
-                        {fee.status !== 'Paid' ? (
-                          <button
-                            onClick={() => handleInitiateRazorpay(fee)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-1.5"
-                          >
-                            <CreditCard className="w-4 h-4" /> Pay via Razorpay
-                          </button>
-                        ) : (
-                          <span className="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-3 py-1.5 rounded-xl font-medium">
-                            Receipt Issued
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl text-xs">
+                  <div className="w-7 h-7 bg-blue-700 rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-sm shrink-0">
+                    {profile.full_name?.split(' ').map(n => n[0]).join('') || 'S'}
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className="font-bold text-slate-900 leading-tight">{profile.full_name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono">{profile.reg_no}</p>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        ) : (
-          /* Admin Panel View */
-          <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-purple-400" /> Create & Publish Fee Notice
-              </h3>
-              <p className="text-xs text-slate-400 mb-6">Generated fee items will be stored in PostgreSQL and synced to the student's portal.</p>
 
-              <form onSubmit={handlePublishFee} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Target Student User UUID</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-                    value={targetStudentId}
-                    onChange={(e) => setTargetStudentId(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Fee Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Semester 4 Tuition Fee"
-                    value={newFeeTitle}
-                    onChange={(e) => setNewFeeTitle(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Fee Description</label>
-                  <input
-                    type="text"
-                    placeholder="Core practical labs, library fees, and IT infrastructure charges."
-                    value={newFeeDesc}
-                    onChange={(e) => setNewFeeDesc(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Fee Amount (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="20000"
-                    value={newFeeAmount}
-                    onChange={(e) => setNewFeeAmount(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={newFeeDueDate}
-                    onChange={(e) => setNewFeeDueDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div className="md:col-span-2">
+              {profile.role === 'admin' && (
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
                   <button
-                    type="submit"
-                    className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/20"
+                    onClick={() => setActiveTab('studentView')}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'studentView' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}
                   >
-                    Publish Fee Schedule to Supabase
+                    Student
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('adminPanel')}
+                    className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'adminPanel' ? 'bg-purple-700 text-white shadow-sm' : 'text-slate-600'}`}
+                  >
+                    Admin
                   </button>
                 </div>
-              </form>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-200"
+                title="Log Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        )}
-      </main>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="max-w-6xl mx-auto px-3 sm:px-4 pt-6">
+          {activeTab === 'studentView' ? (
+            <div className="space-y-5">
+              {/* Actual Student Profile Card */}
+              <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-wrap justify-between items-center gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full flex items-center gap-1">
+                      <GraduationCap className="w-3 h-3" /> {profile.role === 'admin' ? 'Viewing Student' : 'Verified Student'}
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{profile.full_name}</h2>
+                  <p className="text-xs font-semibold text-slate-600 flex flex-wrap items-center gap-2">
+                    <span>Reg No: <strong className="text-slate-900 font-mono">{profile.reg_no || 'N/A'}</strong></span>
+                    <span>•</span>
+                    <span>Department: <strong className="text-blue-700">{profile.department || 'BCA'}</strong></span>
+                  </p>
+                  <p className="text-xs text-slate-500">{session.user.email}</p>
+                </div>
+
+                <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center flex-1 sm:min-w-[120px]">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Portal ID</p>
+                    <p className="text-xs font-mono font-bold text-blue-700 mt-0.5 truncate max-w-[120px]" title={session.user.id}>
+                      {session.user.id.slice(0, 8)}...
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center flex-1 sm:min-w-[120px]">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Fee Status</p>
+                    <p className="text-xs font-bold text-emerald-700 mt-0.5">
+                      {totalUnpaid === 0 ? 'Fully Cleared' : 'Dues Pending'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-white/95 border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-600">Total Unpaid Dues</p>
+                    <div className="p-2 bg-amber-50 rounded-xl">
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-600 mt-2">₹{totalUnpaid.toLocaleString('en-IN')}</p>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Pending payment clearance</p>
+                </div>
+
+                <div className="bg-white/95 border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-600">Total Fees Paid</p>
+                    <div className="p-2 bg-emerald-50 rounded-xl">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-600 mt-2">₹{totalPaid.toLocaleString('en-IN')}</p>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Verified Gateway Receipts</p>
+                </div>
+
+                <div className="bg-white/95 border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-600">Overdue Dues</p>
+                    <div className="p-2 bg-rose-50 rounded-xl">
+                      <Clock className="w-5 h-5 text-rose-600" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold text-rose-600 mt-2">₹{overdueTotal.toLocaleString('en-IN')}</p>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Past designated deadline</p>
+                </div>
+              </div>
+
+              {/* Fee Items Section */}
+              <div className="bg-white/95 border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-blue-700" /> Fee Statements for {profile.full_name}
+                  </h3>
+                </div>
+                
+                {feesLoading ? (
+                  <div className="p-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-700" /> Fetching payment records...
+                  </div>
+                ) : fees.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-200">
+                    No fee statements assigned to <strong className="text-slate-800">{profile.full_name}</strong> yet.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {fees.map((fee) => (
+                      <div key={fee.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-slate-300">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                              fee.status === 'Paid' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                              fee.status === 'Overdue' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-amber-50 border-amber-200 text-amber-700'
+                            }`}>
+                              {fee.status}
+                            </span>
+                            <h4 className="text-sm font-bold text-slate-900">{fee.title}</h4>
+                          </div>
+                          <p className="text-xs text-slate-600">{fee.description}</p>
+                          <p className="text-[11px] text-slate-500 font-medium">Due Date: <span className="text-slate-800 font-mono font-bold">{fee.due_date}</span></p>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200">
+                          <div className="text-left sm:text-right">
+                            <p className="text-[10px] uppercase font-bold text-slate-500">Amount</p>
+                            <p className="text-base font-bold text-slate-900">₹{Number(fee.amount).toLocaleString('en-IN')}</p>
+                          </div>
+
+                          {fee.status !== 'Paid' ? (
+                            <button
+                              onClick={() => handleInitiateRazorpay(fee)}
+                              className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 shrink-0"
+                            >
+                              <CreditCard className="w-4 h-4" /> Pay via Razorpay
+                            </button>
+                          ) : (
+                            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" /> Paid
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Admin View */
+            <div className="space-y-6">
+              <div className="bg-white/95 border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-purple-700" /> Publish New Fee Schedule
+                </h3>
+                <p className="text-xs text-slate-500 mb-6">Published fee items will automatically sync to the designated student's database view.</p>
+
+                <form onSubmit={handlePublishFee} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Target Student User UUID</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Paste Student UUID"
+                      value={targetStudentId}
+                      onChange={(e) => setTargetStudentId(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-mono font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Semester 4 Tuition Fee"
+                      value={newFeeTitle}
+                      onChange={(e) => setNewFeeTitle(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Description</label>
+                    <input
+                      type="text"
+                      placeholder="Practical labs, library fees, and IT infrastructure charges."
+                      value={newFeeDesc}
+                      onChange={(e) => setNewFeeDesc(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Fee Amount (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="20000"
+                      value={newFeeAmount}
+                      onChange={(e) => setNewFeeAmount(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={newFeeDueDate}
+                      onChange={(e) => setNewFeeDueDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-purple-700 font-medium"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <button
+                      type="submit"
+                      className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-md shadow-purple-700/20 active:scale-[0.98]"
+                    >
+                      Publish Fee Schedule
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
