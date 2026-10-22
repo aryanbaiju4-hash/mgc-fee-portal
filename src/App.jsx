@@ -156,24 +156,27 @@ export default function App() {
   const fetchAllStudents = async () => {
     setStudentsLoading(true);
     try {
+      // Fetch all profiles where role is student
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'student')
         .order('full_name', { ascending: true });
 
-      if (error) throw error;
-      setStudentsList(data || []);
-      if (data && data.length > 0 && !selectedStudentId) {
-        setSelectedStudentId(data[0].id);
+      if (error) {
+        console.error('Error fetching student directory:', error);
+      } else {
+        setStudentsList(data || []);
+        if (data && data.length > 0) {
+          setSelectedStudentId(data[0].id);
+        }
       }
     } catch (err) {
-      console.error('Error fetching student directory:', err);
+      console.error('Failed to load student directory:', err);
     } finally {
       setStudentsLoading(false);
     }
   };
-
   // ---------------------------------------------------------
   // AUTHENTICATION HANDLERS
   // ---------------------------------------------------------
