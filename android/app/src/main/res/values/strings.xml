@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fee Payment</string>
+    <string name="title_activity_main">Fee Payment</string>
+    <string name="package_name">com.mgc.feeportal</string>
+    <string name="custom_url_scheme">com.mgc.feeportal</string>
+</resources>
