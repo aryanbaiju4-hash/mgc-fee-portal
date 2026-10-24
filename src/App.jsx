@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { 
-  Building2, 
   UserCheck, 
   ShieldCheck, 
   CreditCard, 
@@ -13,7 +12,6 @@ import {
   Lock,
   User,
   BookOpen,
-  Plus,
   Loader2,
   Receipt,
   GraduationCap,
@@ -24,7 +22,6 @@ import {
   Trash2,
   X,
   Save,
-  Info,
   MapPin,
   Award,
   Globe,
@@ -120,61 +117,7 @@ export default function App() {
     'Semester 6 (Year 3)'
   ];
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user);
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user);
-      else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // REALTIME WEBSOCKET LISTENER FOR LIVE WEBSITE UPDATES
-  useEffect(() => {
-    if (session && profile) {
-      fetchFees();
-      if (profile.role === 'admin') {
-        fetchAllStudents();
-      }
-
-      const feeChannel = supabase
-        .channel('realtime_fee_updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'fee_records' },
-          () => fetchFees()
-        )
-        .subscribe();
-
-      const profileChannel = supabase
-        .channel('realtime_profile_updates')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles' },
-          () => {
-            if (profile.role === 'admin') fetchAllStudents();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(feeChannel);
-        supabase.removeChannel(profileChannel);
-      };
-    }
-  }, [session, profile, activeTab]);
-
-  const fetchProfile = async (authUser) => {
+  const fetchProfile = useCallback(async (authUser) => {
     if (!authUser) {
       setLoading(false);
       return;
@@ -218,9 +161,9 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRole]);
 
-  const syncGlobalFeesToStudent = async (studentId) => {
+  const syncGlobalFeesToStudent = useCallback(async (studentId) => {
     try {
       const { data: globalFees, error: fetchErr } = await supabase
         .from('fee_records')
@@ -261,9 +204,9 @@ export default function App() {
     } catch (err) {
       console.error('Error syncing fees:', err);
     }
-  };
+  }, []);
 
-  const fetchFees = async () => {
+  const fetchFees = useCallback(async () => {
     if (!session) return;
     setFeesLoading(true);
     try {
@@ -294,9 +237,9 @@ export default function App() {
     } finally {
       setFeesLoading(false);
     }
-  };
+  }, [profile, session, syncGlobalFeesToStudent]);
 
-  const fetchAllStudents = async () => {
+  const fetchAllStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
       const { data, error } = await supabase
@@ -315,7 +258,62 @@ export default function App() {
     } finally {
       setStudentsLoading(false);
     }
-  };
+  }, [selectedStudentId]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchProfile(session.user);
+      else setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchProfile(session.user);
+      else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (session && profile) {
+      void (async () => {
+        await fetchFees();
+        if (profile.role === 'admin') {
+          await fetchAllStudents();
+        }
+      })();
+
+      const feeChannel = supabase
+        .channel('realtime_fee_updates')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'fee_records' },
+          () => fetchFees()
+        )
+        .subscribe();
+
+      const profileChannel = supabase
+        .channel('realtime_profile_updates')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'profiles' },
+          () => {
+            if (profile.role === 'admin') fetchAllStudents();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(feeChannel);
+        supabase.removeChannel(profileChannel);
+      };
+    }
+  }, [session, profile, fetchFees, fetchAllStudents]);
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
