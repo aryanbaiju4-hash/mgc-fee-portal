@@ -2,8 +2,8 @@ import emailjs from '@emailjs/browser';
 import { supabase } from '../supabaseClient';
 
 const EMAILJS_SERVICE_ID = 'service_j06v7ml';
-const EMAILJS_TEMPLATE_ID = 'template_ocbij1q'; // <-- Replace with copied ID from dashboard
-const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj';  // <-- Replace with Public Key from Account tab
+const EMAILJS_TEMPLATE_ID = 'template_ocbij1q'; // Ensure this matches your template ID
+const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj'; // Replace with your Public Key
 
 export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, title, description, amount, dueDate }) => {
   let recipients = [];
@@ -31,11 +31,12 @@ export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, 
       return;
     }
 
-    console.log(`Dispatching EmailJS notification to ${recipients.length} recipient(s)...`);
+    console.log(`Dispatching unique fee notices to ${recipients.length} student(s)...`);
 
     const emailPromises = recipients.map((student) => {
       const templateParams = {
         to_email: student.email,
+        user_email: student.email, // Explicit fallback for EmailJS To Field
         to_name: student.full_name,
         subject: `📢 Fee Notice: ${title}`,
         fee_title: title,
@@ -53,7 +54,7 @@ export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, 
     });
 
     await Promise.all(emailPromises);
-    console.log('EmailJS notifications sent successfully!');
+    console.log('All student email notices sent successfully!');
   } catch (err) {
     console.error('Error sending EmailJS notifications:', err);
   }
