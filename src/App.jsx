@@ -168,7 +168,8 @@ export default function App() {
       const { data: globalFees, error: fetchErr } = await supabase
         .from('fee_records')
         .select('*')
-        .eq('target_type', 'all');
+        .eq('target_type', 'all')
+        .is('student_id', null);
 
       if (fetchErr || !globalFees || globalFees.length === 0) return;
 
@@ -222,16 +223,22 @@ export default function App() {
       if (error) throw error;
 
       if (profile?.role === 'student') {
-        data = (data || []).filter(
-          (f) => f.student_id === session.user.id || (f.target_type === 'all' && !f.student_id)
-        );
+        data = (data || []).filter((f) => f.student_id === session.user.id);
       } else if (profile?.role === 'admin') {
         data = (data || []).filter(
           (f) => f.target_type === 'specific' || (f.target_type === 'all' && f.student_id === null)
         );
       }
 
-      setFees(data || []);
+      const uniqueFeesMap = new Map();
+      (data || []).forEach((item) => {
+        const key = `${item.title}-${item.due_date}`;
+        if (!uniqueFeesMap.has(key)) {
+          uniqueFeesMap.set(key, item);
+        }
+      });
+
+      setFees(Array.from(uniqueFeesMap.values()));
     } catch (err) {
       console.error('Error fetching fees:', err);
     } finally {
