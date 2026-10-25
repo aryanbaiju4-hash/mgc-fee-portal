@@ -1,10 +1,10 @@
 import emailjs from '@emailjs/browser';
 import { supabase } from '../supabaseClient';
 
-// Replace with your actual IDs from the EmailJS Dashboard
-const EMAILJS_SERVICE_ID = 'service_emq86dn'; // Replace with new SMTP Service ID if recreated
+// Configured with your verified EmailJS credentials
+const EMAILJS_SERVICE_ID = 'service_emq86dn';
 const EMAILJS_TEMPLATE_ID = 'template_ocbij1q';
-const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj'; // Replace with Public Key from Account tab
+const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj';
 
 export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, title, description, amount, dueDate }) => {
   let recipients = [];
@@ -28,17 +28,17 @@ export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, 
       if (students) recipients = students;
     }
 
-    // 2. Filter out profiles with missing/empty email addresses
+    // 2. Filter out profiles missing valid email addresses
     recipients = recipients.filter((s) => s.email && s.email.trim() !== '');
 
     if (recipients.length === 0) {
-      console.warn('No registered students with valid email addresses found.');
+      console.warn('No registered students with valid emails found.');
       return;
     }
 
     console.log(`Dispatching fee notices to ${recipients.length} student(s)...`);
 
-    // 3. Map over recipients and send via EmailJS
+    // 3. Dispatch emails via EmailJS
     const emailPromises = recipients.map((student) => {
       const templateParams = {
         to_email: student.email,
