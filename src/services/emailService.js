@@ -2,8 +2,8 @@ import emailjs from '@emailjs/browser';
 import { supabase } from '../supabaseClient';
 
 const EMAILJS_SERVICE_ID = 'service_j06v7ml';
-const EMAILJS_TEMPLATE_ID = 'template_ochijiq';
-const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj'; // Replace with your actual Public Key from EmailJS -> Account
+const EMAILJS_TEMPLATE_ID = 'template_ocbij1q'; // <-- Replace with copied ID from dashboard
+const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj';  // <-- Replace with Public Key from Account tab
 
 export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, title, description, amount, dueDate }) => {
   let recipients = [];
