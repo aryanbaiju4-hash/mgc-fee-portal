@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
+import { sendFeeEmailNotification } from './services/emailService';
 import { 
   UserCheck, 
   ShieldCheck, 
@@ -537,11 +538,16 @@ export default function App() {
       const { error } = await supabase.from('fee_records').insert(payload);
       if (error) throw error;
 
-      alert(
-        targetType === 'all'
-          ? `Fee published successfully & synced to live website!`
-          : `Fee published successfully to selected student!`
-      );
+      await sendFeeEmailNotification({
+        targetType,
+        selectedStudentId,
+        title: newFeeTitle,
+        description: newFeeDesc,
+        amount: newFeeAmount,
+        dueDate: newFeeDueDate
+      });
+
+      alert('Fee published & email notifications dispatched successfully!');
 
       setNewFeeTitle('');
       setNewFeeDesc('');
