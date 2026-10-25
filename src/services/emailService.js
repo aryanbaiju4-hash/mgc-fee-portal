@@ -3,48 +3,41 @@ import { supabase } from '../supabaseClient';
 
 const EMAILJS_SERVICE_ID = 'service_j06v7ml';
 const EMAILJS_TEMPLATE_ID = 'template_ochijiq';
-const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj';
+const EMAILJS_PUBLIC_KEY = 'oPUQRf7L6PQ2KI5tj'; // Replace with your actual Public Key from EmailJS -> Account
 
-export const sendFeeEmailNotification = async ({
-  targetType,
-  selectedStudentId,
-  title,
-  description,
-  amount,
-  dueDate
-}) => {
+export const sendFeeEmailNotification = async ({ targetType, selectedStudentId, title, description, amount, dueDate }) => {
+  let recipients = [];
+
   try {
-    let recipients = [];
-
     if (targetType === 'specific' && selectedStudentId) {
-      const { data: student, error } = await supabase
+      const { data: student } = await supabase
         .from('profiles')
         .select('email, full_name')
         .eq('id', selectedStudentId)
         .single();
 
-      if (error) throw error;
       if (student?.email) recipients.push(student);
     } else if (targetType === 'all') {
-      const { data: students, error } = await supabase
+      const { data: students } = await supabase
         .from('profiles')
         .select('email, full_name')
         .eq('role', 'student');
 
-      if (error) throw error;
-      if (students) recipients = students.filter((student) => student.email);
+      if (students) recipients = students;
     }
 
     if (recipients.length === 0) {
-      console.warn('No student emails found to dispatch notices to.');
+      console.warn('No registered students with valid emails found.');
       return;
     }
+
+    console.log(`Dispatching EmailJS notification to ${recipients.length} recipient(s)...`);
 
     const emailPromises = recipients.map((student) => {
       const templateParams = {
         to_email: student.email,
         to_name: student.full_name,
-        subject: `📢 Fee Update: ${title}`,
+        subject: `📢 Fee Notice: ${title}`,
         fee_title: title,
         fee_amount: `₹${Number(amount).toLocaleString('en-IN')}`,
         fee_due_date: dueDate,
@@ -60,9 +53,8 @@ export const sendFeeEmailNotification = async ({
     });
 
     await Promise.all(emailPromises);
-    console.log(`Dispatched emails to ${recipients.length} student(s).`);
+    console.log('EmailJS notifications sent successfully!');
   } catch (err) {
-    console.error('Error dispatching fee emails:', err);
-    throw err;
+    console.error('Error sending EmailJS notifications:', err);
   }
 };
