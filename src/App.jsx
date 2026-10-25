@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { sendFeeEmailNotification } from './services/emailService';
+import { InstallPWA } from './components/InstallPWA';
 import { 
   UserCheck, 
   ShieldCheck, 
@@ -975,6 +976,8 @@ export default function App() {
                   </button>
                 </div>
               )}
+
+              <InstallPWA />
 
               <button
                 onClick={handleLogout}
