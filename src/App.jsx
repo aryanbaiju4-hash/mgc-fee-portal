@@ -324,7 +324,7 @@ export default function App() {
     }
   }, [session, profile, fetchFees, fetchAllStudents]);
 
-  const handleAuthSubmit = async (e) => {
+const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
@@ -354,8 +354,10 @@ export default function App() {
         if (signUpError) throw signUpError;
 
         if (authData.user) {
-          setAwaitingOtp(true);
-          alert(`Verification OTP sent to ${email}. Check your inbox.`);
+          if (selectedRole === 'student') {
+            await syncGlobalFeesToStudent(authData.user.id);
+          }
+          await fetchProfile(authData.user);
         }
       } else {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
